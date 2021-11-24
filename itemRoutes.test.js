@@ -2,18 +2,22 @@ process.env.NODE_ENV = "test";
 const request = require("supertest");
 const fs = require("fs");
 const app = require("./app");
+const fsp = require('fs/promises');
+
 
 // test grocery item
 let pickles = { name: "pickles", "price": 2 };
 
 // initalize the JSON file as [ {testObject} ]
-beforeEach(() => {
-    fs.writeFile('./groceryList.json', JSON.stringify([pickles]), { encoding: 'utf8', flag: 'w' }, function (err) {
-        if (err) {
-            console.log(`Error writing to path`, err);
-            process.kill(1)
-        }
-    });
+beforeEach(async () => {
+    await fsp.writeFile('./groceryList.json', JSON.stringify([pickles]));
+
+    // fs.writeFile('./groceryList.json', JSON.stringify([pickles]), { encoding: 'utf8', flag: 'w' }, function (err) {
+    //     if (err) {
+    //         console.log(`Error writing to path`, err);
+    //         process.kill(1)
+    //     }
+    // });
 });
 
 
@@ -25,25 +29,34 @@ beforeEach(() => {
  * 
  */
 
-// afterEach(() => {
-//     fs.readFile('./groceryList.json', 'utf8', (err, data) => {
-//         if (err) {
-//             console.log(`Error reading`, err);
-//             process.kill(1);
-//         }
+afterEach(async () => {
 
-//         let list = JSON.parse(data);
+    const data = await fsp.readFile('./groceryList.json')
+    let list = JSON.parse(String(data));
 
-//         list.length = 0;
+    list.length = 0;
 
-//         fs.writeFile('./groceryList.json', JSON.stringify(list), { encoding: 'utf8', flag: 'w' }, function (err) {
-//             if (err) {
-//                 console.log(`Error writing to path`, err);
-//                 process.kill(1)
-//             }
-//         });
-//     });
-// });
+    fsp.writeFile('./groceryList.json', JSON.stringify(list))
+
+
+    // fs.readFile('./groceryList.json', 'utf8', (err, data) => {
+    //     if (err) {
+    //         console.log(`Error reading`, err);
+    //         process.kill(1);
+    //     }
+
+    //     let list = JSON.parse(data);
+
+    //     list.length = 0;
+
+    //     fs.writeFile('./groceryList.json', JSON.stringify(list), { encoding: 'utf8', flag: 'w' }, function (err) {
+    //         if (err) {
+    //             console.log(`Error writing to path`, err);
+    //             process.kill(1)
+    //         }
+    //     });
+    // });
+});
 
 
 describe("GET /items", () => {
@@ -74,7 +87,7 @@ describe("POST /items", () => {
     test("Create new grocery item", async () => {
         const res = await request(app).post('/items').send({ name: "tortillas", price: 2.50 });
         expect(res.statusCode).toBe(201);
-        expect(res.body).toEqual({ added: { name: "tortillas", price: 2.50 } })
+        expect(res.body).toEqual({ added: { item: { name: "tortillas", price: 2.50 } } })
     });
 
     test("Create new grocery item without name", async () => {

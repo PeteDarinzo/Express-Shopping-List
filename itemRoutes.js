@@ -3,6 +3,7 @@ const ExpressError = require('./expressError');
 // @ts-ignore
 const router = new express.Router();
 const fs = require('fs');
+const Item = require('./item');
 
 
 // return all items in the list
@@ -10,7 +11,6 @@ router.get('/', (req, res) => {
     fs.readFile('./groceryList.json', 'utf8', (err, data) => {
         if (err) {
             console.log(`Error reading file`, err);
-            process.kill(1);
         }
         return res.status(200).json(JSON.parse(data));
     });
@@ -18,7 +18,7 @@ router.get('/', (req, res) => {
 
 
 // add a new item to the list
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
     try {
         if (!req.body.name) throw new ExpressError("Name is required", 400);
         if (!req.body.price) throw new ExpressError("Price is required", 400);
@@ -26,26 +26,10 @@ router.post('/', (req, res, next) => {
         const name = req.body.name;
         const price = req.body.price;
 
-        const item = { name, price };
+        const newItem = new Item(name, price);
+        await newItem.addItem()
 
-        fs.readFile('./groceryList.json', "utf8", (err, data) => {
-            if (err) {
-                console.log("Error reading file", err);
-                process.kill(1);
-            }
-
-            let list = JSON.parse(data);
-
-            list.push(item);
-
-            fs.writeFile('./groceryList.json', JSON.stringify(list), { encoding: 'utf8', flag: 'w' }, err => {
-                if (err) {
-                    console.log(`Error writing to file`, err);
-                    process.kill(1)
-                }
-                return res.status(201).json({ added: item });
-            });
-        });
+        return res.status(201).json({ added: newItem });
     } catch (e) {
         return next(e);
     }
@@ -53,80 +37,44 @@ router.post('/', (req, res, next) => {
 
 
 // get a particular item from the list
-router.get('/:name', (req, res, next) => {
-    fs.readFile('./groceryList.json', 'utf8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file`, err);
-            process.kill(1);
-        }
-        try {
-            let list = JSON.parse(data);
-            const item = list.find(i => i.name === req.params.name);
-            if (!item) throw new ExpressError("Item not found", 404);
-            res.status(200).json({ item });
-        } catch (e) {
-            return next(e);
-        }
-    });
+router.get('/:name', async (req, res, next) => {
+    try {
+        const item = await Item.getItem(req.params.name);
+        if (!item) throw new ExpressError("Item not found", 404);
+        res.status(200).json({ item });
+    } catch (e) {
+        return next(e);
+    }
 });
 
 
 // update an item's name and/or price
-router.patch('/:name', (req, res, next) => {
-    fs.readFile('./groceryList.json', 'utf8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file`, err);
-            process.kill(1);
-        }
-        try {
-            let list = JSON.parse(data);
-            const item = list.find(i => i.name === req.params.name);
+router.patch('/:name', async (req, res, next) => {
+    try {
+        if (!req.body.name) throw new ExpressError("Name is required", 400);
+        if (!req.body.price) throw new ExpressError("Price is required", 400);
+        const newName = req.body.name;
+        const newPrice = req.body.price;
+        const item = await Item.updateItem(req.params.name, newName, newPrice);
+        if (!item) throw new ExpressError("Item not found", 404);
+        return res.status(200).json({ updated: item });
+    } catch (e) {
 
-            if (!item) throw new ExpressError("Item not found", 404);
-            if (!req.body.name) throw new ExpressError("Name is required", 400);
-            if (!req.body.price) throw new ExpressError("Price is required", 400);
-
-            item.name = req.body.name;
-            item.price = req.body.price;
-
-            fs.writeFile('./groceryList.json', JSON.stringify(list), { encoding: 'utf8', flag: 'w' }, err => {
-                if (err) {
-                    console.log(`Error writing to file`, err);
-                    process.kill(1);
-                }
-                res.status(200).json({ updated: item });
-            });
-        } catch (e) {
-            return next(e);
-        }
-    });
+        return next(e);
+    }
 });
 
-// delete an item from the list
-router.delete('/:name', (req, res, next) => {
 
-    fs.readFile('./groceryList.json', 'utf8', (err, data) => {
-        if (err) {
-            console.log(`Error reading file`, err);
-            process.kill(1);
-        }
-        try {
-            let list = JSON.parse(data);
-            const item = list.find(i => i.name === req.params.name);
-            if (!item) throw new ExpressError("Item not found", 404);
-            const index = list.indexOf(item);
-            list.splice(index, 1);
-            fs.writeFile('./groceryList.json', JSON.stringify(list), { encoding: 'utf8', flag: 'w' }, function (err) {
-                if (err) {
-                    console.log(`Error writing to file`, err);
-                    process.kill(1);
-                }
-                return res.status(200).json({ message: "Deleted" });
-            });
-        } catch (e) {
-            return next(e);
-        }
-    });
+
+// delete an item from the list
+router.delete('/:name', async (req, res, next) => {
+    try {
+        const item = await Item.deleteItem(req.params.name);
+        if (item === undefined) throw new ExpressError("Item not found", 404);
+        return res.status(200).json({ message: "Deleted" });
+    } catch (e) {
+        return next(e);
+    }
 });
 
 
