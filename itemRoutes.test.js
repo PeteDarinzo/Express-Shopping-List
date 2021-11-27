@@ -11,8 +11,6 @@ let pickles = { name: "pickles", "price": 2 };
 // initalize the JSON file as [ {testObject} ]
 beforeEach(async () => {
     await fsp.writeFile('./groceryList.json', JSON.stringify([pickles]));
-
-    
 });
 
 
