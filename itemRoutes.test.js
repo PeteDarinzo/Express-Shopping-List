@@ -12,22 +12,9 @@ let pickles = { name: "pickles", "price": 2 };
 beforeEach(async () => {
     await fsp.writeFile('./groceryList.json', JSON.stringify([pickles]));
 
-    // fs.writeFile('./groceryList.json', JSON.stringify([pickles]), { encoding: 'utf8', flag: 'w' }, function (err) {
-    //     if (err) {
-    //         console.log(`Error writing to path`, err);
-    //         process.kill(1)
-    //     }
-    // });
+    
 });
 
-
-/**
- * THEORY 
- * after each test, read the JSON file
- * reduce the length of the array to 0 (to negate any adding or updating of the test object)
- * then it will be ready for the next tests
- * 
- */
 
 afterEach(async () => {
 
@@ -37,25 +24,6 @@ afterEach(async () => {
     list.length = 0;
 
     fsp.writeFile('./groceryList.json', JSON.stringify(list))
-
-
-    // fs.readFile('./groceryList.json', 'utf8', (err, data) => {
-    //     if (err) {
-    //         console.log(`Error reading`, err);
-    //         process.kill(1);
-    //     }
-
-    //     let list = JSON.parse(data);
-
-    //     list.length = 0;
-
-    //     fs.writeFile('./groceryList.json', JSON.stringify(list), { encoding: 'utf8', flag: 'w' }, function (err) {
-    //         if (err) {
-    //             console.log(`Error writing to path`, err);
-    //             process.kill(1)
-    //         }
-    //     });
-    // });
 });
 
 
